@@ -8,11 +8,11 @@
 
 ## Imports
 from __future__ import annotations
-from collections.abc import Generator
+from collections.abc import Iterable, Generator, Sequence
 from enum import IntEnum
 
 ## Constants
-__all__: tuple[str, ...] = ("Tile", "decompress_tile_ids")
+__all__: tuple[str, ...] = ("Tile", "compress_tile_ids", "decompress_tile_ids")
 BUILTIN_NAME_LOOKUP: dict[int, str] = {
     0: "Grass",
     1: "Soil",
@@ -50,9 +50,25 @@ BUILTIN_NAME_LOOKUP: dict[int, str] = {
 
 
 ## Functions
-def decompress_tile_ids(tile_data: list[int]) -> Generator[int, None, None]:
+def compress_tile_ids(tiles: Iterable[Tile]) -> Generator[tuple[int, int], None, None]:
     """
-    Generator for creating Tile list by getting tile id and count and expanding
+    Generator for creating compressed tile id and counter for saving world back to disk
+    """
+    _id: int | None = None
+    counter: int = 0
+    for tile in tiles:
+        if _id is None:
+            _id = tile.id
+        elif tile.id != _id:
+            yield (_id, counter)
+            _id = tile.id
+            counter = 0
+        counter += 1
+
+
+def decompress_tile_ids(tile_data: Sequence[int]) -> Generator[int, None, None]:
+    """
+    Generator for creating tile id list by getting tile id and expanding by count
     [i + 0] = id
     [i + 1] = count
     """
