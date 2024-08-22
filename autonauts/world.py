@@ -13,6 +13,8 @@ from collections.abc import Generator
 from enum import Enum, Flag, auto
 from pathlib import Path
 
+from .game_object import GameObject
+from .player import Player
 from .plot import Plot
 from .tile import Tile, compress_tile_ids, decompress_tile_ids
 
@@ -32,21 +34,17 @@ class World:
 
     # -Constructor
     def __init__(
-            self, name: str, size: tuple[int, int], gamemode: Gamemode, spawn: list[int],
-            flags: GameOptions, plots: tuple[Plot, ...]
+            self, name: str, size: tuple[int, int], gamemode: Gamemode,
+            spawn: tuple[int, int], flags: GameOptions, plots: tuple[Plot, ...]
     ) -> None:
         self.name: str = name
         self.size: tuple[int, int] = size
         self.gamemode: Gamemode = gamemode
-        self.spawn: list[int] = spawn
+        self.spawn: tuple[int, int] = spawn
         self.options: GameOptions = flags
         self.plots: tuple[Plot, ...] = plots
 
     # -Dunder Methods
-    def __len__(self) -> int:
-        '''Returns count of tiles'''
-        return self.size[0] * self.size[1]
-
     def __getitem__(self, key: tuple[int, int]) -> Tile:
         '''(X,Y) index to plot->tile array relative to world origin'''
         x, y = key
@@ -85,8 +83,8 @@ class World:
             },
             # --Tiles
             'Tiles': {
-                'TilesHigh': self.size[1],
-                'TilesWide': self.size[0],
+                'TilesHigh': self.height,
+                'TilesWide': self.width,
                 'TileTypes': tuple(tiles)
             },
             # --Plots
@@ -106,8 +104,8 @@ class World:
         # -Options
         _options = data['GameOptions']
         name: str = _options['Name']
-        gamemode = Gamemode(_options['GameModeName'])
-        spawn: list[int] = [_options['StartPositionX'], _options['StartPositionY']]
+        gamemode: Gamemode = Gamemode(_options['GameModeName'])
+        spawn: tuple[int, int] = (_options['StartPositionX'], _options['StartPositionY'])
         # --Flags
         flags: GameOptions = GameOptions(0)
         if _options['BadgeUnlocksEnabled']:
@@ -148,6 +146,10 @@ class World:
 
     # -Properties
     @property
+    def tile_count(self) -> int:
+        return self.width * self.height
+
+    @property
     def height(self) -> int:
         return self.size[1]
 
@@ -157,8 +159,10 @@ class World:
 
 
 class Gamemode(Enum):
-    Creative = "ModeCreative"
     Campaign = "ModeCampaign"
+    Creative = "ModeCreative"
+    Free = "ModeFree"
+    Settlement = "ModeSettlement"
 
 
 class GameOptions(Flag):

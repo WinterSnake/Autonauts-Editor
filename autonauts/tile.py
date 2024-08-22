@@ -11,6 +11,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Generator, Sequence
 from enum import IntEnum
 
+from .game_object import GameObject
+
 ## Constants
 __all__: tuple[str, ...] = ("Tile", "compress_tile_ids", "decompress_tile_ids")
 BUILTIN_NAME_LOOKUP: dict[int, str] = {
@@ -89,8 +91,9 @@ class Tile:
     """
 
     # -Constructor
-    def __init__(self, _id: int) -> None:
+    def __init__(self, _id: int, objects: list[GameObject] | None = None) -> None:
         self.id: int = _id
+        self.objects: list[GameObject] = [] if objects is None else objects
 
     # -Dunder Methods
     def __repr__(self) -> str:
