@@ -19,11 +19,8 @@ __all__: tupler[str, ...] = ("World",)
 
 
 ## Functions
-def parse_game_options(data: dict) -> None:
-    """
-    """
-    gamemode = Gamemode(data['GameModeName'])
-    print(gamemode)
+def split_plot_tiles(plots: Iterable[Plot]) -> tuple[dict[str, int], list[int]]:
+    """Create a function that takes a list of plots and returns the plot visible and tuple of tiles"""
     pass
 
 
@@ -45,10 +42,12 @@ class World:
 
     # -Dunder Methods
     def __getitem__(self, key: tuple[int, int]) -> None:
-        pass
+        x: int = key[0]
+        y: int = key[1]
 
     def __setitem__(self, key: tuple[int, int], value) -> None:
-        pass
+        x: int = key[0]
+        y: int = key[1]
 
     # -Instance Methods
 
@@ -85,7 +84,6 @@ class World:
             Plot.from_position(idx, size, bool(visible), _tiles['TileTypes'])
             for idx, visible in enumerate(_plots)
         )
-        print(size)
         return cls(name, size, gamemode, spawn, game_flags, plots)
 
     @classmethod
