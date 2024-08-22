@@ -125,11 +125,11 @@ class World:
             flags |= GameOptions.Tutorial
         # -Tiles
         _tiles = data['Tiles']
-        print(len(_tiles['TileTypes']))
+        size: tuple[int, int] = (_tiles['TilesWide'], _tiles['TilesHigh'])
         tiles: tuple[Tile, ...] = tuple(
             Tile(_id) for _id in decompress_tile_ids(_tiles['TileTypes'])
         )
-        size: tuple[int, int] = (_tiles['TilesWide'], _tiles['TilesHigh'])
+        assert len(tiles) == size[0] * size[1]
         # --Objects
         for obj in data['Objects']:
             pass
@@ -138,7 +138,7 @@ class World:
             Plot.from_index(i, size, bool(visible), tiles)
             for i, visible in enumerate(data['Plots']['PlotsVisible'])
         )
-        assert (size[0] // Plot.Width) * (size[1] // Plot.Height) == len(plots)
+        assert len(plots) == (size[0] // Plot.Width) * (size[1] // Plot.Height)
         return cls(name, size, gamemode, spawn, flags, plots)
 
     @classmethod

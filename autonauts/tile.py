@@ -64,6 +64,8 @@ def compress_tile_ids(tiles: Iterable[Tile]) -> Generator[tuple[int, int], None,
             _id = tile.id
             counter = 0
         counter += 1
+    assert _id is not None
+    yield (_id, counter)
 
 
 def decompress_tile_ids(tile_data: Sequence[int]) -> Generator[int, None, None]:
