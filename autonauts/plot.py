@@ -3,26 +3,18 @@
 ## Autonauts Save Editor         ##
 ## Written By: Ryan Smith        ##
 ##-------------------------------##
-## World: Plot                   ##
+## Plot                          ##
 ##-------------------------------##
 
 ## Imports
 from __future__ import annotations
-from collections.abc import Iterable
+from collections.abc import Sequence
 from typing import ClassVar
 
 from .tile import Tile
 
 ## Constants
-__all__: tuple[str] = ("Tile", "compress_plots")
-
-
-## Functions
-def compress_plots(plots: Iterable[Plot]) -> tuple[tuple[bool], tuple[int]]:
-    """
-    Returns divided plot visibility and chunked tile list to be stored back to game
-    """
-    pass
+__all__: tuple[str] = ("Plot",)
 
 
 ## Classes
@@ -34,9 +26,9 @@ class Plot:
     """
 
     # -Constructor
-    def __init__(self, visible: bool, tiles: tuple[Tile]) -> None:
+    def __init__(self, visible: bool, tiles: tuple[Tile, ...]) -> None:
         self.visible: bool = visible
-        self.tiles: tuple[Tile] = tiles
+        self.tiles: tuple[Tile, ...] = tiles
 
     # -Dunder Methods
     def __getitem__(self, key: tuple[int, int]) -> Tile:
@@ -49,7 +41,7 @@ class Plot:
     @classmethod
     def from_index(
         cls, index: int, size: tuple[int, int],
-        visible: bool, tiles: Iterable[Tile]
+        visible: bool, tiles: Sequence[Tile]
     ) -> Plot:
         '''Returns a plot of land by given index with a list of tiles attached to plot'''
         assert len(tiles) == size[0] * size[1]

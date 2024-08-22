@@ -16,7 +16,7 @@ from .plot import Plot
 from .tile import Tile, decompress_tile_ids
 
 ## Constants
-__all__: tupler[str, ...] = (
+__all__: tuple[str, ...] = (
     "Gamemode", "GameOptions", "World",
 )
 
@@ -32,14 +32,14 @@ class World:
     # -Constructor
     def __init__(
             self, name: str, size: tuple[int, int], gamemode: Gamemode, spawn: list[int],
-            flags: GameOptions, plots: tuple[Plot]
+            flags: GameOptions, plots: tuple[Plot, ...]
     ) -> None:
         self.name: str = name
         self.size: tuple[int, int] = size
         self.gamemode: Gamemode = gamemode
         self.spawn: list[int] = spawn
         self.options: GameOptions = flags
-        self.plots: tuple[Plot] = plots
+        self.plots: tuple[Plot, ...] = plots
 
     # -Dunder Methods
     def __getitem__(self, key: tuple[int, int]) -> Tile:
@@ -56,7 +56,7 @@ class World:
         _game_options = data['GameOptions']
         name: str = _game_options['Name']
         gamemode = Gamemode(_game_options['GameModeName'])
-        spawn = (_game_options['StartPositionX'], _game_options['StartPositionY'])
+        spawn: list[int] = [_game_options['StartPositionX'], _game_options['StartPositionY']]
         # --Game flags
         game_flags: GameOptions = GameOptions(0)
         if _game_options['BadgeUnlocksEnabled']:
@@ -73,10 +73,13 @@ class World:
             game_flags |= GameOptions.Tutorial
         # -Tiles
         _tiles = data['Tiles']
-        tiles: tuple[Tile] = tuple(
+        tiles: tuple[Tile, ...] = tuple(
             Tile(_id) for _id in decompress_tile_ids(_tiles['TileTypes'])
         )
         size: tuple[int, int] = (_tiles['TilesWide'], _tiles['TilesHigh'])
+        # --Objects
+        for obj in data['Objects']:
+            pass
         # --Plots
         _plots = data['Plots']['PlotsVisible']
         plots: tuple[Plot, ...] = tuple(
