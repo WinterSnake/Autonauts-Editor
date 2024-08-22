@@ -13,8 +13,7 @@ from collections.abc import Generator
 from enum import Enum, Flag, auto
 from pathlib import Path
 
-from .game_object import GameObject
-from .player import Player
+from .game_object import GameObject, Player, load_game_object
 from .plot import Plot
 from .tile import Tile, compress_tile_ids, decompress_tile_ids
 
@@ -34,10 +33,11 @@ class World:
 
     # -Constructor
     def __init__(
-            self, name: str, size: tuple[int, int], gamemode: Gamemode,
-            spawn: tuple[int, int], flags: GameOptions, plots: tuple[Plot, ...]
+        self, name: str, size: tuple[int, int], seed: int, gamemode: Gamemode,
+        spawn: tuple[int, int], flags: GameOptions, plots: tuple[Plot, ...]
     ) -> None:
         self.name: str = name
+        self.seed: int = seed
         self.size: tuple[int, int] = size
         self.gamemode: Gamemode = gamemode
         self.spawn: tuple[int, int] = spawn
@@ -48,20 +48,22 @@ class World:
     def __getitem__(self, key: tuple[int, int]) -> Tile:
         '''(X,Y) index to plot->tile array relative to world origin'''
         x, y = key
-        idx = x // Plot.Width + (y // Plot.Height) * (self.size[0] // Plot.Width)
+        idx = x // Plot.Width + (y // Plot.Height) * (self.width // Plot.Width)
         return self.plots[idx][x % Plot.Width, y % Plot.Height]
 
     # -Instance Methods
     def expand_tiles(self) -> Generator[Tile, None, None]:
         '''Expands all plot->tiles into a 1d generator'''
-        for y in range(self.size[1]):
-            for x in range(self.size[0]):
+        for y in range(self.height):
+            for x in range(self.width):
                 yield self[x, y]
 
     def to_dict(self) -> dict:
         '''Return a save file compatible dict of the world'''
         # -Compute compressed tile ids
         tiles: list[int] = []
+        # -TODO: Use generator send for tile id compression
+        # -TODO: move expand tiles inline to iter over game objects
         for compressed_id in compress_tile_ids(self.expand_tiles()):
             tiles.extend(compressed_id)
         return {
@@ -70,6 +72,7 @@ class World:
             'External': 0,  # -Always 0
             'GameOptions': {
                 'Name': self.name,
+                'Seed': self.seed,
                 'GameModeName': self.gamemode.value,
                 'StartPositionX': self.spawn[0],
                 'StartPositionY': self.spawn[1],
@@ -104,6 +107,7 @@ class World:
         # -Options
         _options = data['GameOptions']
         name: str = _options['Name']
+        seed: int = _options['Seed']
         gamemode: Gamemode = Gamemode(_options['GameModeName'])
         spawn: tuple[int, int] = (_options['StartPositionX'], _options['StartPositionY'])
         # --Flags
@@ -128,15 +132,19 @@ class World:
         )
         assert len(tiles) == size[0] * size[1]
         # --Objects
+        player: Player
         for obj in data['Objects']:
-            pass
+            position, _obj = load_game_object(obj)
+            if isinstance(_obj, Player):
+                player = _obj
+                continue
         # --Plots
         plots: tuple[Plot, ...] = tuple(
             Plot.from_index(i, size, bool(visible), tiles)
             for i, visible in enumerate(data['Plots']['PlotsVisible'])
         )
         assert len(plots) == (size[0] // Plot.Width) * (size[1] // Plot.Height)
-        return cls(name, size, gamemode, spawn, flags, plots)
+        return cls(name, size, seed, gamemode, spawn, flags, plots)
 
     @classmethod
     def from_file(cls, file: Path) -> World:
