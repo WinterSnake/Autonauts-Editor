@@ -14,7 +14,7 @@ from enum import Enum, Flag, auto
 from pathlib import Path
 
 from .plot import Plot
-from .tile import Tile, decompress_tile_ids
+from .tile import Tile, compress_tile_ids, decompress_tile_ids
 
 ## Constants
 __all__: tuple[str, ...] = (
@@ -88,7 +88,11 @@ class World:
         _tiles = data['Tiles'] = {
             'TilesHigh': self.size[1],
             'TilesWide': self.size[0],
-            'TileTypes': tuple()
+            'TileTypes': tuple(
+                value
+                for compressed_id in compress_tile_ids(self.expand_tiles())
+                for value in compressed_id
+            )
         }
         return data
 
@@ -121,6 +125,7 @@ class World:
             flags |= GameOptions.Tutorial
         # -Tiles
         _tiles = data['Tiles']
+        print(len(_tiles['TileTypes']))
         tiles: tuple[Tile, ...] = tuple(
             Tile(_id) for _id in decompress_tile_ids(_tiles['TileTypes'])
         )
