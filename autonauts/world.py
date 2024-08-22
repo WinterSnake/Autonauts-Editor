@@ -35,6 +35,7 @@ class World:
             flags: GameOptions, plots: tuple[Plot]
     ) -> None:
         self.name: str = name
+        self.size: tuple[int, int] = size
         self.gamemode: Gamemode = gamemode
         self.spawn: list[int] = spawn
         self.options: GameOptions = flags
@@ -43,8 +44,9 @@ class World:
     # -Dunder Methods
     def __getitem__(self, key: tuple[int, int]) -> Tile:
         '''(X,Y) index to plot->tile array relative to world origin'''
-        x: int = key[0]
-        y: int = key[1]
+        x, y = key
+        idx = x // Plot.Width + (y // Plot.Height) * (self.size[0] // Plot.Width)
+        return self.plots[idx][x % Plot.Width, y % Plot.Height]
 
     # -Class Methods
     @classmethod

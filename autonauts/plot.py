@@ -36,13 +36,14 @@ class Plot:
     # -Constructor
     def __init__(self, visible: bool, tiles: tuple[Tile]) -> None:
         self.visible: bool = visible
-        self._tiles: tuple[Tile] = tiles
+        self.tiles: tuple[Tile] = tiles
 
     # -Dunder Methods
     def __getitem__(self, key: tuple[int, int]) -> Tile:
         '''(X,Y) index to tile array relative to plot origin'''
-        x: int = key[0]
-        y: int = key[1]
+        x, y = key
+        idx: int = x + y * Plot.Width
+        return self.tiles[idx]
 
     # -Class Methods
     @classmethod
@@ -51,15 +52,16 @@ class Plot:
         visible: bool, tiles: Iterable[Tile]
     ) -> Plot:
         '''Returns a plot of land by given index with a list of tiles attached to plot'''
-        assert size[0] * size[1] == len(tiles)
+        assert len(tiles) == size[0] * size[1]
         _tiles: list[Tile] = []
         pos_x: int = (index % (size[0] // Plot.Width)) * Plot.Width
         pos_y: int = (index // (size[0] // Plot.Width)) * Plot.Height
         for y in range(Plot.Height):
-            idx: int = pos_x + y * size[0]
+            idx: int = pos_x + pos_y * size[0] + y * size[0]
             _tiles.extend(tiles[idx : idx + Plot.Width])
+        assert len(_tiles) == Plot.Width * Plot.Height
         return cls(visible, tuple(_tiles))
 
     # -Class Properties
     Width: ClassVar[int] = 21
-    Height: ClassVar[int] = 10
+    Height: ClassVar[int] = 12
