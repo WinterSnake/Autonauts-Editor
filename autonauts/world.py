@@ -13,20 +13,20 @@ from enum import Enum, Flag, auto
 from pathlib import Path
 
 from .plot import Plot
+from .tile import Tile, decompress_tile_ids
 
 ## Constants
-__all__: tupler[str, ...] = ("World",)
-
-
-## Functions
-def split_plot_tiles(plots: Iterable[Plot]) -> tuple[dict[str, int], list[int]]:
-    """Create a function that takes a list of plots and returns the plot visible and tuple of tiles"""
-    pass
+__all__: tupler[str, ...] = (
+    "Gamemode", "GameOptions", "World",
+)
 
 
 ## Classes
 class World:
     """
+    Autonauts World
+    - Stores list of plots and tiles as well as settings, flags
+    objects, storage, bots, and scripts
     """
 
     # -Constructor
@@ -41,21 +41,15 @@ class World:
         self.plots: tuple[Plot] = plots
 
     # -Dunder Methods
-    def __getitem__(self, key: tuple[int, int]) -> None:
+    def __getitem__(self, key: tuple[int, int]) -> Tile:
+        '''(X,Y) index to plot->tile array relative to world origin'''
         x: int = key[0]
         y: int = key[1]
-
-    def __setitem__(self, key: tuple[int, int], value) -> None:
-        x: int = key[0]
-        y: int = key[1]
-
-    # -Instance Methods
 
     # -Class Methods
     @classmethod
     def from_dict(cls, data: dict) -> World:
         ''''''
-        print(data.keys())
         # -Game options
         _game_options = data['GameOptions']
         name: str = _game_options['Name']
@@ -77,12 +71,15 @@ class World:
             game_flags |= GameOptions.Tutorial
         # -Tiles
         _tiles = data['Tiles']
+        tiles: tuple[Tile] = tuple(
+            Tile(_id) for _id in decompress_tile_ids(_tiles['TileTypes'])
+        )
         size: tuple[int, int] = (_tiles['TilesWide'], _tiles['TilesHigh'])
         # --Plots
         _plots = data['Plots']['PlotsVisible']
         plots: tuple[Plot, ...] = tuple(
-            Plot.from_position(idx, size, bool(visible), _tiles['TileTypes'])
-            for idx, visible in enumerate(_plots)
+            Plot.from_index(i, size, bool(visible), tiles)
+            for i, visible in enumerate(_plots)
         )
         return cls(name, size, gamemode, spawn, game_flags, plots)
 
@@ -92,25 +89,13 @@ class World:
             data = json.load(f)
         return cls.from_dict(data)
 
-    # -Static Methods
-
-    # -Properties
-
-    # -Class Properties
-
 
 class Gamemode(Enum):
-    """
-    """
-
     Creative = "ModeCreative"
     Campaign = "ModeCampaign"
 
 
 class GameOptions(Flag):
-    """
-    """
-
     BadgeUnlocks = auto()
     BotLimit = auto()
     BotRecharging = auto()
