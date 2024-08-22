@@ -16,3 +16,4 @@ SAVE = Path("./docs/Saves/Test/World.txt")
 ## Functions
 
 ## Body
+my_world = World.from_file(SAVE)
