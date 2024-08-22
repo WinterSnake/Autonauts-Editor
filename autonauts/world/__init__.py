@@ -12,6 +12,8 @@ import json
 from enum import Enum, Flag, auto
 from pathlib import Path
 
+from .plot import Plot
+
 ## Constants
 __all__: tupler[str, ...] = ("World",)
 
@@ -31,30 +33,26 @@ class World:
     """
 
     # -Constructor
-    def __init__(self, name: str, gamemode: Gamemode, spawn: tuple[int, int], flags: GameOptions) -> None:
+    def __init__(
+            self, name: str, size: tuple[int, int], gamemode: Gamemode, spawn: list[int],
+            flags: GameOptions, plots: tuple[Plot]
+    ) -> None:
         self.name: str = name
         self.gamemode: Gamemode = gamemode
-        self.spawn: tuple[int, int] = spawn
+        self.spawn: list[int] = spawn
         self.options: GameOptions = flags
+        self.plots: tuple[Plot] = plots
 
     # -Dunder Methods
+    def __getitem__(self, key: tuple[int, int]) -> None:
+        pass
+
+    def __setitem__(self, key: tuple[int, int], value) -> None:
+        pass
 
     # -Instance Methods
-    def to_dict(self) -> dict:
-        ''''''
-        pass
-
-    def to_file(self, file: Path) -> None:
-        ''''''
-        pass
 
     # -Class Methods
-
-    # -Static Methods
-
-    # -Properties
-
-    # -Class Properties
     @classmethod
     def from_dict(cls, data: dict) -> World:
         ''''''
@@ -78,13 +76,29 @@ class World:
             game_flags |= GameOptions.Recording
         if _game_options['TutorialEnabled']:
             game_flags |= GameOptions.Tutorial
-        return cls(name, gamemode, spawn, game_flags)
+        # -Tiles
+        _tiles = data['Tiles']
+        size: tuple[int, int] = (_tiles['TilesWide'], _tiles['TilesHigh'])
+        # --Plots
+        _plots = data['Plots']['PlotsVisible']
+        plots: tuple[Plot, ...] = tuple(
+            Plot.from_position(idx, size, bool(visible), _tiles['TileTypes'])
+            for idx, visible in enumerate(_plots)
+        )
+        print(size)
+        return cls(name, size, gamemode, spawn, game_flags, plots)
 
     @classmethod
     def from_file(cls, file: Path) -> World:
         with file.open('r') as f:
             data = json.load(f)
         return cls.from_dict(data)
+
+    # -Static Methods
+
+    # -Properties
+
+    # -Class Properties
 
 
 class Gamemode(Enum):
