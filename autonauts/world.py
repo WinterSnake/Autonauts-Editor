@@ -134,10 +134,12 @@ class World:
         # --Objects
         player: Player
         for obj in data['Objects']:
-            position, _obj = load_game_object(obj)
+            (x, y), _obj = load_game_object(obj)
             if isinstance(_obj, Player):
                 player = _obj
                 continue
+            idx: int = x + y * size[0]
+            tiles[idx].objects.append(_obj)
         # --Plots
         plots: tuple[Plot, ...] = tuple(
             Plot.from_index(i, size, bool(visible), tiles)
