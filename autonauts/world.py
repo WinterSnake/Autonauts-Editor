@@ -61,10 +61,14 @@ class World:
                 yield self[x, y]
 
     def to_dict(self) -> dict:
-        ''''''
-        data: dict = {
-            'AutonautsWorld': 1,
-            'Version': "140.2",
+        '''Return a save file compatible dict of the world'''
+        # -Compute compressed tile ids
+        tiles: list[int] = []
+        for compressed_id in compress_tile_ids(self.expand_tiles()):
+            tiles.extend(compressed_id)
+        return {
+            'AutonautsWorld': 1,  # -Always 1
+            'Version': "140.2",  # -Latest support only
             'External': 0,  # -Always 0
             'GameOptions': {
                 'Name': self.name,
@@ -79,31 +83,26 @@ class World:
                 'RecordingEnabled': GameOptions.Recording in self.options,
                 'TutorialEnabled': GameOptions.Tutorial in self.options,
             },
+            # --Tiles
+            'Tiles': {
+                'TilesHigh': self.size[1],
+                'TilesWide': self.size[0],
+                'TileTypes': tuple(tiles)
+            },
             # --Plots
             'Plots': {
                 'PlotsVisible': tuple(int(plot.visible) for plot in self.plots)
             }
         }
-        # -Tiles
-        _tiles = data['Tiles'] = {
-            'TilesHigh': self.size[1],
-            'TilesWide': self.size[0],
-            'TileTypes': tuple(
-                value
-                for compressed_id in compress_tile_ids(self.expand_tiles())
-                for value in compressed_id
-            )
-        }
-        return data
 
-    def to_file(self, file: Path) -> None:
-        ''''''
-        pass
+    def to_file(self, file: Path, indent: int | None = None) -> None:
+        with file.open('w') as f:
+            json.dump(self.to_dict(), f, indent=indent)
 
     # -Class Methods
     @classmethod
     def from_dict(cls, data: dict) -> World:
-        ''''''
+        '''Load world from expected unpacked json'''
         # -Options
         _options = data['GameOptions']
         name: str = _options['Name']
