@@ -226,7 +226,7 @@ class StageProperty(GameObjectProperty):
     def __repr__(self) -> str:
         return f"Stage={self.stage};Time={self.timer}"
 
-    # -Instand Methods
+    # -Instance Methods
     def to_dict(self) -> dict:
         return { 'ST': self.stage, 'STT': self.timer }
 
@@ -253,7 +253,7 @@ class TreeProperty(GameObjectProperty):
     def __repr__(self) -> str:
         return f"Bees={self.bee_uid}"
 
-    # -Instand Methods
+    # -Instance Methods
     def to_dict(self) -> dict:
         data: dict = { 'SL': 0 }  # -Unknown property
         if self.bee_uid is not None:

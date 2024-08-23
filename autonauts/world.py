@@ -12,6 +12,7 @@ import json
 from collections.abc import Generator
 from enum import Enum, Flag, auto
 from pathlib import Path
+from typing import cast
 
 from .game_object import GameObject, Player, load_game_object
 from .plot import Plot
@@ -54,22 +55,31 @@ class World:
         return self.plots[idx][x % Plot.Width, y % Plot.Height]
 
     # -Instance Methods
-    def expand_tiles(self) -> Generator[Tile, None, None]:
-        '''Expands all plot->tiles into a 1d generator'''
-        for y in range(self.height):
-            for x in range(self.width):
-                yield self[x, y]
-
     def to_dict(self) -> dict:
         '''Return a save file compatible dict of the world'''
-        # -Compute compressed tile ids
-        objects: list[dict] = []
         tiles: list[int] = []
-        # -TODO: Use generator send for tile id compression
-        # -TODO: move expand tiles inline to iter over game objects
-        for compressed_id in compress_tile_ids(self.expand_tiles()):
-            tiles.extend(compressed_id)
+        objects: list[dict] = []
+        # -Compute compressed tile ids
+        compression_gen = compress_tile_ids()
+        compression_gen.send(None)
+        for y in range(self.height):
+            for x in range(self.width):
+                position = (x, y)
+                # -Tile
+                tile = self[x, y]
+                compressed_id = compression_gen.send(tile)
+                if compressed_id:
+                    tiles.extend(compressed_id)
+                    next(compression_gen)
+                # -Objects
+                for obj in tile.objects:
+                    objects.append(obj.to_dict(position))
+        tiles.extend(cast(
+            tuple[int, int], compression_gen.send(None), 
+        ))
+        # -Player | Structures
         objects.append(self.player.to_dict())
+        # -World format
         return {
             'AutonautsWorld': 1,  # -Always 1
             'Version': "140.2",  # -Latest support only
@@ -146,7 +156,6 @@ class World:
                 continue
             idx: int = x + y * size[0]
             tiles[idx].objects.append(_obj)
-            print(repr(_obj))
         # --Plots
         plots: tuple[Plot, ...] = tuple(
             Plot.from_index(i, size, bool(visible), tiles)
