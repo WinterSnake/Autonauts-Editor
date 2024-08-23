@@ -52,14 +52,14 @@ BUILTIN_NAME_LOOKUP: dict[int, str] = {
 
 
 ## Functions
-def compress_tile_ids() -> Generator[tuple[int, int], Tile | None, None]:
+def compress_tile_ids() -> Generator[tuple[int, int] | None, Tile | None, None]:
     """
     Generator for creating compressed tile id and counter for saving world back to disk
     """
     _id: int | None = None
     counter: int = 0
     while True:
-        tile = yield
+        tile = yield None
         if tile is None:
             break
         elif _id is None:

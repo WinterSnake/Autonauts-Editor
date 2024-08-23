@@ -61,7 +61,7 @@ class World:
         objects: list[dict] = []
         # -Compute compressed tile ids
         compression_gen = compress_tile_ids()
-        compression_gen.send(None)
+        next(compression_gen)
         for y in range(self.height):
             for x in range(self.width):
                 position = (x, y)
