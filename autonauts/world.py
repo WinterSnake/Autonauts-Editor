@@ -74,9 +74,7 @@ class World:
                 # -Objects
                 for obj in tile.objects:
                     objects.append(obj.to_dict(position))
-        tiles.extend(cast(
-            tuple[int, int], compression_gen.send(None), 
-        ))
+        tiles.extend(cast(tuple[int, int], compression_gen.send(None)))
         # -Player | Structures
         objects.append(self.player.to_dict())
         # -World format

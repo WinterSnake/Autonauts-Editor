@@ -14,14 +14,15 @@ from typing import ClassVar, Protocol
 ## Constants
 __all__: tuple[str, ...] = (
     "GameObject", "Player", "Structure",
+    "GameObjectProperty", "DurabilityProperty", "StageProperty",
+    "TreeProperty", "FlowerProperty"
     "load_game_object"
 )
 
 
 ## Functions
-def load_game_object(data: dict) -> tuple[tuple[int, int], Player | GameObject]:
-    '''
-    '''
+def load_game_object(data: dict) -> tuple[tuple[int, int], Player | Structure | GameObject]:
+    """Load a dict as a game object and return its position"""
     position: tuple[int, int] = (data['TX'], data['TY'])
     if data['ID'] == Player.Identifier:
         return (position, Player.from_dict(data))
@@ -33,6 +34,7 @@ def load_game_object(data: dict) -> tuple[tuple[int, int], Player | GameObject]:
 ## -Objects
 class GameObject:
     """
+    An object in the game by a given position (attached to a tile) and properties
     """
 
     # -Constructor
@@ -177,6 +179,17 @@ class Player:
     # -Class Properties
     Identifier: ClassVar[str] = "FarmerPlayer"
 
+
+class Structure:
+    """
+    """
+
+    # -Constructor
+    def __init__(self) -> None:
+        pass
+
+    # -Class Properties
+    Identifiers: ClassVar[tuple[str, ...]] = ("",)
 
 ## -Properties
 class GameObjectProperty(Protocol):
