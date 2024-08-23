@@ -34,7 +34,8 @@ class World:
     # -Constructor
     def __init__(
         self, name: str, size: tuple[int, int], seed: int, gamemode: Gamemode,
-        spawn: tuple[int, int], flags: GameOptions, plots: tuple[Plot, ...]
+        spawn: tuple[int, int], flags: GameOptions, plots: tuple[Plot, ...],
+        player: Player
     ) -> None:
         self.name: str = name
         self.seed: int = seed
@@ -43,6 +44,7 @@ class World:
         self.spawn: tuple[int, int] = spawn
         self.options: GameOptions = flags
         self.plots: tuple[Plot, ...] = plots
+        self.player: Player = player
 
     # -Dunder Methods
     def __getitem__(self, key: tuple[int, int]) -> Tile:
@@ -61,11 +63,13 @@ class World:
     def to_dict(self) -> dict:
         '''Return a save file compatible dict of the world'''
         # -Compute compressed tile ids
+        objects: list[dict] = []
         tiles: list[int] = []
         # -TODO: Use generator send for tile id compression
         # -TODO: move expand tiles inline to iter over game objects
         for compressed_id in compress_tile_ids(self.expand_tiles()):
             tiles.extend(compressed_id)
+        objects.append(self.player.to_dict())
         return {
             'AutonautsWorld': 1,  # -Always 1
             'Version': "140.2",  # -Latest support only
@@ -84,16 +88,18 @@ class World:
                 'RecordingEnabled': GameOptions.Recording in self.options,
                 'TutorialEnabled': GameOptions.Tutorial in self.options,
             },
+            # --Plots
+            'Plots': {
+                'PlotsVisible': tuple(int(plot.visible) for plot in self.plots)
+            },
             # --Tiles
             'Tiles': {
                 'TilesHigh': self.height,
                 'TilesWide': self.width,
                 'TileTypes': tuple(tiles)
             },
-            # --Plots
-            'Plots': {
-                'PlotsVisible': tuple(int(plot.visible) for plot in self.plots)
-            }
+            # --Objects
+            'Objects': tuple(objects)
         }
 
     def to_file(self, file: Path, indent: int | None = None) -> None:
@@ -140,13 +146,14 @@ class World:
                 continue
             idx: int = x + y * size[0]
             tiles[idx].objects.append(_obj)
+            print(repr(_obj))
         # --Plots
         plots: tuple[Plot, ...] = tuple(
             Plot.from_index(i, size, bool(visible), tiles)
             for i, visible in enumerate(data['Plots']['PlotsVisible'])
         )
         assert len(plots) == (size[0] // Plot.Width) * (size[1] // Plot.Height)
-        return cls(name, size, seed, gamemode, spawn, flags, plots)
+        return cls(name, size, seed, gamemode, spawn, flags, plots, player)
 
     @classmethod
     def from_file(cls, file: Path) -> World:

@@ -8,6 +8,7 @@
 
 ## Imports
 from __future__ import annotations
+from enum import IntEnum
 from typing import ClassVar, Protocol
 
 ## Constants
@@ -68,10 +69,11 @@ class GameObject:
     # -Class Methods
     @classmethod
     def from_dict(cls, data: dict) -> GameObject:
-        # -Object Modifiers
+        # -Object Properties
         properties: list[GameObjectProperty] = []
-        if DurabilityProperty.data_has_property(data):
-            properties.append(DurabilityProperty.from_dict(data))
+        for property_check in PROPERTY_CHECKS:
+            if property_check.data_has_property(data):
+                properties.append(property_check.from_dict(data))
         return cls(data['ID'], data['UID'], *properties)
 
     # -Static Methods
@@ -87,7 +89,7 @@ class GameObject:
 
 class Player:
     """
-    A GameObject representing a player and their inventory (hands/backpack/upgrades)
+    A GameObject representing a player and their inventory (hands/backpack/upgrades/clothes)
     """
 
     # -Constructor
@@ -101,6 +103,7 @@ class Player:
         self.hands: list[GameObject] = inventory['hands'] if 'hands' in inventory else []
         self.backpack: list[GameObject] = inventory['backpack'] if 'backpack' in inventory else []
         self.upgrades: list[GameObject] = inventory['upgrades'] if 'upgrades' in inventory else []
+        self.clothes: list[GameObject] = inventory['clothes'] if 'clothes' in inventory else []
 
     # -Instance Methods
     def to_dict(self) -> dict:
@@ -125,6 +128,10 @@ class Player:
                     item.to_dict(self.position) for item in self.upgrades
                 )
             },
+            # -Clothes
+            'Clothes': {
+                'ClothesObjects': tuple()
+            }
         })
         return data
 
@@ -184,7 +191,7 @@ class GameObjectProperty(Protocol):
 
 
 class DurabilityProperty(GameObjectProperty):
-    """Game Object Property for items with durability/usage counters"""
+    """Game Object Durability Property: uses"""
     # -Constructor
     def __init__(self, durability: int) -> None:
         self.durability: int = durability
@@ -206,3 +213,112 @@ class DurabilityProperty(GameObjectProperty):
     @staticmethod
     def data_has_property(data: dict) -> bool:
         return 'Used' in data
+
+
+class StageProperty(GameObjectProperty):
+    """Game Object Stage Property: stage and stage timer"""
+    # -Constructor
+    def __init__(self, stage: int, timer: int) -> None:
+        self.stage: int = stage
+        self.timer: int = timer
+
+    # -Dunder Method
+    def __repr__(self) -> str:
+        return f"Stage={self.stage};Time={self.timer}"
+
+    # -Instand Methods
+    def to_dict(self) -> dict:
+        return { 'ST': self.stage, 'STT': self.timer }
+
+    # -Class Methods
+    @classmethod
+    def from_dict(cls, data: dict) -> StageProperty:
+        stage: int = data['ST']
+        timer: int = data['STT']
+        return cls(stage, timer)
+
+    # -Static Methods
+    @staticmethod
+    def data_has_property(data: dict) -> bool:
+        return 'ST' in data and 'STT' in data
+
+
+class TreeProperty(GameObjectProperty):
+    """Game Object Tree Property: <unknown> and bees"""
+    # -Constructor
+    def __init__(self, bee_uid: int | None) -> None:
+        self.bee_uid: int | None = bee_uid
+
+    # -Dunder Method
+    def __repr__(self) -> str:
+        return f"Bees={self.bee_uid}"
+
+    # -Instand Methods
+    def to_dict(self) -> dict:
+        data: dict = { 'SL': 0 }  # -Unknown property
+        if self.bee_uid is not None:
+            data[TreeProperty.BeesKey] = {
+                'ID': TreeProperty.BeesKey,
+                'UID': self.bee_uid,
+                'TX': 0,
+                'TY': 0,
+            }
+        return data
+
+    # -Class Methods
+    @classmethod
+    def from_dict(cls, data: dict) -> TreeProperty:
+        unknown: int = data['SL']
+        bee_uid: int | None = None
+        if TreeProperty.BeesKey in data:
+            bee_uid = data[TreeProperty.BeesKey]['UID']
+        return cls(bee_uid)
+
+    # -Static Methods
+    @staticmethod
+    def data_has_property(data: dict) -> bool:
+        return 'SL' in data
+
+    # -Class Properties
+    BeesKey: ClassVar[str] = "BeesNest"
+
+
+class FlowerProperty(GameObjectProperty):
+    """Game Object Flower Property: type"""
+    # -Constructor
+    def __init__(self, _type: FlowerProperty.Type) -> None:
+        self.type: FlowerProperty.Type = _type
+
+    # -Dunder Method
+    def __repr__(self) -> str:
+        return f"Type={self.type.name}"
+
+    # -Instance Methods
+    def to_dict(self) -> dict:
+        return { 'Type': self.type.value }
+
+    # -Class Methods
+    @classmethod
+    def from_dict(cls, data: dict) -> FlowerProperty:
+        return cls(FlowerProperty.Type(data['Type']))
+
+    # -Static Methods
+    @staticmethod
+    def data_has_property(data: dict) -> bool:
+        return 'Type' in data
+
+    # -Sub-Classes
+    class Type(IntEnum):
+        Aster = 0
+        Tulip = 1
+        Delphinium = 2
+        Primrose = 3
+        Rose = 4
+        Gladioli = 5
+        Chamomile = 6
+
+
+## Body
+PROPERTY_CHECKS: tuple[type[GameObjectProperty], ...] = (
+    DurabilityProperty, StageProperty, TreeProperty, FlowerProperty
+)
