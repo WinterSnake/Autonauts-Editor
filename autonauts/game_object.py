@@ -26,6 +26,8 @@ def load_game_object(data: dict) -> tuple[tuple[int, int], Player | Structure | 
     position: tuple[int, int] = (data['TX'], data['TY'])
     if data['ID'] == Player.Identifier:
         return (position, Player.from_dict(data))
+    elif data['ID'] in Structure.Identifiers:
+        return (position, Structure.from_dict(data))
     obj = GameObject.from_dict(data)
     return (position, obj)
 
@@ -185,13 +187,107 @@ class Structure:
     """
 
     # -Constructor
-    def __init__(self) -> None:
+    def __init__(
+        self, _id: str, position: tuple[int, int], rotation: int, flipped: bool,
+        uid: int | None = None, name: str | None = None,
+        *properties: StructureObjectProperties
+    ) -> None:
+        self.id: str = _id
+        self.uid: int = uid if uid else GameObject.get_uid()
+        self.name: str | None = name
+        self.position: tuple[int, int] = position
+        self.rotation: int = rotation
+        self.flipped: bool = flipped
+        self.properties: tuple[StructureObjectProperties, ...] = properties
+
+    # -Instance Methods
+    def to_dict(self) -> dict:
         pass
 
-    # -Class Properties
-    Identifiers: ClassVar[tuple[str, ...]] = ("",)
+    # -Class Methods
+    @classmethod
+    def from_dict(cls, data: dict) -> Structure:
+        uid: int = data['UID']
+        _id: str = data['ID']
+        name: str | None = data.get('Name', None)
+        position: tuple[int, int] = (data['TX'], data['TY'])
+        rotation: int = data['Rotation']
+        flipped: bool = data['F']
+        properties: list[StructureObjectProperty] = []
+        # -Properties
+        if _id in Structure.Assembly:
+            print(f"Assembly Structure[{_id}]\t", end='')
+            properties.append(AssemblyProperty.from_dict(data))
+        if _id in Structure.Storage:
+            print(f"Storage[{_id}]:\t", end='')
+            print(f"data = {data}")
+        if properties:
+            print(properties)
+        return cls(_id, position, rotation, flipped, uid, name, properties)
 
-## -Properties
+    # -Properties
+    @property
+    def x(self) -> int:
+        return self.position[0]
+
+    @x.setter
+    def x(self, value: int) -> None:
+        self.position = (value, self.position[1])
+
+    @property
+    def y(self) -> int:
+        return self.position[1]
+
+    @y.setter
+    def y(self, value: int) -> None:
+        self.position = (self.position[0], value)
+
+    # -Class Properties
+    Assembly: ClassVar[tuple[str]] = (
+        # -Workshop
+        "Workbench", "WorkbenchMk2", "ChoppingBlock", "BenchSaw", "BenchSaw2",
+        "CogBench", "MasonryBench", "WorkbenchStructural",
+        "WorkerWorkbenchMk1", "WorkerWorkbenchMk2", "WorkerWorkbenchMk3",
+        "WorkerAssembler", "VehicleAssembler", "VehicleAssemblerGood",
+        "BasicMetalWorkbench", "MetalWorkbench",
+        # -Folks
+        "FolkSeedPod", "FolkSeedRehydrator",
+        # -Cooking
+        "OvenCrude", "Oven", "PotCrude", "CookingPotCrude", "Cauldron",
+        "Quern", "Gristmill", "ButterChurn", "KitchenTable",
+        # -Nature
+        "CrudeAnimalBreedingStation", "CrudePlantBreedingStation",
+        "Barn", "ChickenCoop", "HayBalerCrude",
+        # -Clothing
+        "LoomCrude", "LoomGood", "SpinningWheel", "SpinningJenny",
+        "HatMaker", "SewingStation", "RockingChair",
+        # -Misc
+        "WheatHammer", "ClayStationCrude", "ClayStation", "StringWinderCrude",
+        "MortarMixerCrude", "MortarMixerGood", "ToyStationCrude",
+        "Easel", "PaperMill", "PrintingPress", "MedicineStation",
+        "KilnCrude", "ClayFurnace", "Furnace",
+    )
+    Fueled: ClassVar[tuple[str, ...]] = (
+        # -Cooking
+        "OvenCrude", "Oven", "CookingPotCrude", "Cauldron",
+        # -Misc
+        "KilnCrude", "ClayFurnace", "Furnace",
+    )
+    Storage: ClassVar[tuple[str]] = (
+        "StorageGeneric", "StorageGenericMedium",
+        "StoragePalette", "StoragePaletteMedium",
+        "StorageLiquid", "StorageLiquidMedium",
+        "StorageWorker", "StorageFertiliser", "StorageSand",
+        "StorageSandMedium", "StorageSeedlings",
+    )
+    Identifiers: ClassVar[set[str, ...]] = set((
+        "Transmitter", "Wardrobe", "BotServer", "StoneHeads",
+        "Ziggurat", "StoneHenge", "SpacePort", "BeltLinkage", 
+        # -Property-Driven
+        *Assembly, *Fueled, *Storage
+    ))
+
+## -Properties: Object
 class GameObjectProperty(Protocol):
     # -Instance Methods
     def to_dict(self) -> dict: ...
@@ -329,6 +425,49 @@ class FlowerProperty(GameObjectProperty):
         Rose = 4
         Gladioli = 5
         Chamomile = 6
+
+
+## -Properties: Structure
+class StructureObjectProperty(Protocol):
+    # -Instance Methods
+    def to_dict(self) -> dict: ...
+    # -Class Methods
+    @classmethod
+    def from_dict(cls, data: dict) -> StructureObjectProperty: ...
+
+
+class AssemblyProperty(StructureObjectProperty):
+    """"""
+    # -Constructor
+    def __init__(
+        self, output: str | None, craft_count: int,
+        is_crafting: bool, ingredients: list[GameObject]
+    ) -> None:
+        self.output: str | None = output
+        self.craft_count: int = craft_count
+        self.is_crafting: bool = is_crafting
+        self.ingredients: list[GameObject] = ingredients
+
+    # -Dunder Methods
+    def __repr__(self) -> str:
+        return f"Output: '{self.output}'; Crafted: {self.craft_count} ; Ingredients: {self.ingredients}"
+
+    # -Instance Methods
+    def to_dict(self) -> dict:
+        pass
+
+    # -Class Methods
+    @classmethod
+    def from_dict(cls, data: dict) -> WorkbenchProperty:
+        output: str | None = data['ToCreateItem']
+        if output == "Total":
+            output = None
+        craft_count: int = data['NumCreated']
+        is_crafting: bool = bool(data['State'])
+        ingredients: list[GameObject] = [
+            GameObject.from_dict(_data) for _data in data['IngredientsItems']
+        ]
+        return cls(output, craft_count, is_crafting, ingredients)
 
 
 ## Body

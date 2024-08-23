@@ -14,7 +14,7 @@ from enum import Enum, Flag, auto
 from pathlib import Path
 from typing import cast
 
-from .game_object import GameObject, Player, load_game_object
+from .game_object import GameObject, Player, Structure, load_game_object
 from .plot import Plot
 from .tile import Tile, compress_tile_ids, decompress_tile_ids
 
@@ -147,13 +147,17 @@ class World:
         assert len(tiles) == size[0] * size[1]
         # --Objects
         player: Player
+        counter: int = 0
         for obj in data['Objects']:
             (x, y), _obj = load_game_object(obj)
             if isinstance(_obj, Player):
                 player = _obj
                 continue
+            elif isinstance(_obj, Structure):
+                counter += 1
             idx: int = x + y * size[0]
             tiles[idx].objects.append(_obj)
+        print(f"Total structures: {counter}")
         # --Plots
         plots: tuple[Plot, ...] = tuple(
             Plot.from_index(i, size, bool(visible), tiles)
